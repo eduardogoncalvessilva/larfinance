@@ -1,0 +1,2 @@
+-- Baseline técnico da Spec 00.
+-- A primeira migration de domínio será criada na Spec 01.

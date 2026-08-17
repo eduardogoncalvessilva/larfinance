@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-larfinance}
+      POSTGRES_USER: ${POSTGRES_USER:-larfinance}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-larfinance_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - larfinance-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+    command: sh -c "npm run db:deploy && npm run dev -- --hostname 0.0.0.0"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-larfinance}:${POSTGRES_PASSWORD:-larfinance_dev_password}@db:5432/${POSTGRES_DB:-larfinance}?schema=public
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  larfinance-postgres:

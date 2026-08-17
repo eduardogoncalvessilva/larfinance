@@ -1,0 +1,11 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// O schema de domínio começa na Spec 01. Esta configuração permite validar
+// geração do cliente e migrations desde a fundação técnica.
