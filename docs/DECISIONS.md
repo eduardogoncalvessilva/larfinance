@@ -19,3 +19,7 @@ Formato: cada decisão registra contexto, escolha e consequência. Este arquivo 
 | D-013 | Git/CI | `main` + branches por feature; GitHub Actions | Lint, typecheck, testes e build verdes antes de integração. |
 | D-014 | Governança de agentes | Specs por feature, revisão humana e pontos de parada definidos | Agente consulta humano em decisões de alto impacto; não commita sem revisão. |
 | D-015 | Documentação | PRODUCT, REQUIREMENTS, ARCHITECTURE, DECISIONS + AGENTS, README e specs | Documentos vivos, atualizados com decisões e obstáculos reais. |
+| D-016 | Transferências | Duas movimentações `TRANSFER` vinculadas por uma entidade `Transfer`, gravadas atomicamente | Saldos por conta usam uma perna por conta; patrimônio consolidado ignora ambas as pernas. |
+| D-017 | Saldo investido | Indicador manual separado, fora do saldo consolidado das contas | Dashboard apresenta investimento explicitamente, sem somá-lo ao dinheiro disponível. |
+| D-018 | Arquivamento de categorias | Preservar histórico e bloquear novos lançamentos em categorias arquivadas | Consultas históricas permanecem consistentes; a interface oferece arquivamento em vez de remoção. |
+| D-019 | Remoção de membro | Exigir membro ativo de destino para transferir responsabilidades, preservando autor histórico | Não existem lançamentos sem responsável após remoção; a reatribuição ocorre atomicamente. |

@@ -67,3 +67,12 @@ Definir o contrato de dados e os invariantes que tornam os valores financeiros a
 3. Implementar schema Prisma, constraints e migration inicial.
 4. Criar adapters/repositórios mínimos somente para testes de persistência.
 5. Executar testes de migration/integração e revisar o contrato contra `REQUIREMENTS.md`.
+
+## 10. Como testar
+
+1. Suba o Postgres local com `docker compose up -d db`.
+2. Gere o cliente e aplique todas as migrations: `npm run db:generate` e `npm run db:deploy`.
+3. Execute as regras puras com `npm run test:unit` e a persistência com `npm run test:integration`.
+4. Rode a validação completa com `npm run check`.
+
+O resultado esperado é a aprovação dos helpers de BRL/data, das constraints de unicidade e do teste que rejeita uma transação ligada à conta de outra família.

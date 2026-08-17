@@ -7,5 +7,212 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// O schema de domínio começa na Spec 01. Esta configuração permite validar
-// geração do cliente e migrations desde a fundação técnica.
+enum Currency {
+  BRL
+}
+
+enum MembershipRole {
+  ADMIN
+  MEMBER
+}
+
+enum AccountType {
+  CHECKING
+  CASH
+}
+
+enum AccountStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+enum CategoryStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  ADJUSTMENT
+  TRANSFER
+  CARD_PURCHASE
+}
+
+enum TransactionStatus {
+  EFFECTIVE
+  CANCELED
+}
+
+enum TransferDirection {
+  DEBIT
+  CREDIT
+}
+
+model User {
+  id                  String        @id @default(cuid())
+  email               String        @unique
+  emailNormalized     String        @unique
+  passwordHash        String
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  memberships         Membership[]
+  sessions            Session[]
+  createdFamilies     Family[]      @relation("FamilyCreator")
+  createdAccounts     Account[]     @relation("AccountCreator")
+  updatedAccounts     Account[]     @relation("AccountUpdater")
+  createdCategories   Category[]    @relation("CategoryCreator")
+  updatedCategories   Category[]    @relation("CategoryUpdater")
+  createdTransactions Transaction[] @relation("TransactionCreator")
+  updatedTransactions Transaction[] @relation("TransactionUpdater")
+  createdTransfers    Transfer[]    @relation("TransferCreator")
+}
+
+model Family {
+  id           String        @id @default(cuid())
+  name         String
+  createdById  String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  createdBy    User          @relation("FamilyCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  memberships  Membership[]
+  accounts     Account[]
+  categories   Category[]
+  transactions Transaction[]
+  transfers    Transfer[]
+
+  @@index([createdById])
+}
+
+model Membership {
+  id                      String         @id @default(cuid())
+  familyId                String
+  userId                  String
+  role                    MembershipRole @default(MEMBER)
+  revokedAt               DateTime?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  family                  Family         @relation(fields: [familyId], references: [id], onDelete: Restrict)
+  user                    User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  responsibleTransactions Transaction[]  @relation("TransactionResponsibility")
+
+  @@unique([id, familyId])
+  @@unique([familyId, userId])
+  @@index([familyId, revokedAt])
+  @@index([userId])
+}
+
+model Session {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, expiresAt])
+}
+
+model Account {
+  id                  String        @id @default(cuid())
+  familyId            String
+  name                String
+  type                AccountType
+  status              AccountStatus @default(ACTIVE)
+  initialBalanceCents Int
+  initialBalanceDate  DateTime      @db.Date
+  createdById         String
+  updatedById         String
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  family              Family        @relation(fields: [familyId], references: [id], onDelete: Restrict)
+  createdBy           User          @relation("AccountCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy           User          @relation("AccountUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+  transactions        Transaction[] @relation("TransactionAccount")
+
+  @@unique([familyId, name])
+  @@unique([id, familyId])
+  @@index([familyId, status])
+}
+
+model Category {
+  id           String         @id @default(cuid())
+  familyId     String
+  name         String
+  type         CategoryType
+  status       CategoryStatus @default(ACTIVE)
+  parentId     String?
+  createdById  String
+  updatedById  String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  family       Family         @relation(fields: [familyId], references: [id], onDelete: Restrict)
+  parent       Category?      @relation("CategoryHierarchy", fields: [parentId, familyId], references: [id, familyId], onDelete: Restrict)
+  children     Category[]     @relation("CategoryHierarchy")
+  createdBy    User           @relation("CategoryCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy    User           @relation("CategoryUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+  transactions Transaction[]  @relation("TransactionCategory")
+
+  @@unique([familyId, name])
+  @@unique([id, familyId])
+  @@index([familyId, status, type])
+  @@index([parentId])
+}
+
+model Transfer {
+  id           String        @id @default(cuid())
+  familyId     String
+  createdById  String
+  createdAt    DateTime      @default(now())
+  family       Family        @relation(fields: [familyId], references: [id], onDelete: Restrict)
+  createdBy    User          @relation("TransferCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  transactions Transaction[] @relation("TransactionTransfer")
+
+  @@unique([id, familyId])
+  @@index([familyId, createdAt])
+}
+
+model Transaction {
+  id                      String             @id @default(cuid())
+  familyId                String
+  type                    TransactionType
+  status                  TransactionStatus  @default(EFFECTIVE)
+  amountCents             Int
+  currency                Currency           @default(BRL)
+  accountId               String?
+  categoryId              String?
+  competenceDate          DateTime           @db.Date
+  postedAt                DateTime           @db.Date
+  description             String?            @db.VarChar(500)
+  responsibleMembershipId String?
+  isPersonal              Boolean            @default(false)
+  transferId              String?
+  transferDirection       TransferDirection?
+  canceledAt              DateTime?
+  createdById             String
+  updatedById             String
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  family                  Family             @relation(fields: [familyId], references: [id], onDelete: Restrict)
+  account                 Account?           @relation("TransactionAccount", fields: [accountId, familyId], references: [id, familyId], onDelete: Restrict)
+  category                Category?          @relation("TransactionCategory", fields: [categoryId, familyId], references: [id, familyId], onDelete: Restrict)
+  responsibleMembership   Membership?        @relation("TransactionResponsibility", fields: [responsibleMembershipId, familyId], references: [id, familyId], onDelete: Restrict)
+  transfer                Transfer?          @relation("TransactionTransfer", fields: [transferId, familyId], references: [id, familyId], onDelete: Restrict)
+  createdBy               User               @relation("TransactionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy               User               @relation("TransactionUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+
+  @@index([familyId, postedAt])
+  @@index([familyId, competenceDate])
+  @@index([familyId, type, status])
+  @@index([accountId, postedAt])
+  @@index([categoryId])
+  @@index([responsibleMembershipId])
+  @@index([transferId])
+}

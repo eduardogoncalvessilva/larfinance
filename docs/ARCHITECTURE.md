@@ -172,12 +172,12 @@ As chaves e consultas de entidades financeiras devem sempre considerar `familyId
 - **Importação**: parser → validação completa → prévia → transação de banco atômica. Erro em qualquer linha impede a escrita.
 - **Recorrência**: cria pendência; somente confirmação cria transação efetiva.
 
-### Contratos financeiros que exigem decisão antes de persistência
+### Contratos financeiros decididos
 
-- **Transferência:** a spec de domínio deve escolher e documentar uma única representação: duas movimentações espelhadas vinculadas ou uma transação composta com duas pernas. A escolha não pode variar entre endpoints e deve preservar a invariável de patrimônio consolidado.
-- **Saldo investido:** a spec deve definir se integra o patrimônio consolidado do dashboard ou se é um indicador separado; o cálculo não pode ser implícito na interface.
-- **Categorias arquivadas:** o comportamento recomendado é preservar o histórico e bloquear somente novos lançamentos; a taxonomia padrão e essa regra devem ser aprovadas no onboarding.
-- **Remoção de membro:** a reatribuição de responsável/rateio exige um destino definido em transação, preservando autor e histórico.
+- **Transferência (D-016):** duas movimentações `TRANSFER`, uma de débito e outra de crédito, vinculadas por `Transfer` e criadas em uma única transação. Saldos por conta usam sua respectiva perna; patrimônio consolidado ignora ambas.
+- **Saldo investido (D-017):** indicador manual separado, que não integra o saldo consolidado das contas nem recebe cálculo implícito na interface.
+- **Categorias arquivadas (D-018):** o histórico é preservado e novos lançamentos são bloqueados; a taxonomia padrão será definida no onboarding.
+- **Remoção de membro (D-019):** requer membro ativo de destino para reatribuir responsabilidades de modo atômico, preservando o autor e o histórico.
 
 ### Autenticação e sessão
 
